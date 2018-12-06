@@ -76,7 +76,7 @@ if train == 1:
         columns = list(range(0, new_id_sample.shape[1], int(new_id_sample.shape[1]/46)))
         next_sample = new_id_sample[np.array(rows)[:, None], np.array(columns)]
         next_sample_clipped = next_sample[np.array(rows_clipped)[:, None], np.array(list(range(46)))]
-        next_sample_clipped = np.array(next_sample_clipped).transpose()
+        next_sample_clipped = np.array(next_sample_clipped)
         sample_final = np.expand_dims(next_sample_clipped, axis=0) #Expand dimensions for torch input.
         
         time_series_data.append(sample_final)
@@ -114,10 +114,10 @@ if train == 1:
         s = pd.Series(classes)
         one_hot = s.isin([targ])
         dfList = one_hot.tolist()
-        return np.array(dfList).astype(int)
+        return np.reshape(np.array(dfList).astype(int), (1, 14))
 
 # Expand dimensions of classes for torch.
-    classifications = np.array([np.expand_dims(np.expand_dims(encode_one_hot(targ), axis=0), axis=2) for targ in y])
+    classifications = np.array([np.expand_dims(encode_one_hot(targ), axis=0) for targ in y])
 
 # Fill in NaN cells with the average of the columns
     for j in range(full_train.shape[1]):
@@ -178,33 +178,33 @@ class ConvNet(torch.nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
         self.main = nn.Sequential(
-                                  # input is 1 x 46 x 7
-                                  nn.Conv2d(in_channels=nc, out_channels=50, kernel_size=(4, 1), stride=(2, 1) ,padding = 1, bias=True),
+                                  # input is 1 x 7 x 46
+                                  nn.Conv2d(in_channels=nc, out_channels=50, kernel_size=(1, 4), stride=(1, 2) ,padding = 1, bias=True),
                                   nn.Tanh(),
-                                  # state size. (50) x 23 x 7
-                                  nn.Conv2d(in_channels=50, out_channels=50, kernel_size=(4, 1), stride=1, bias=True),
+                                  # state size. (50) x 7 x 23
+                                  nn.Conv2d(in_channels=50, out_channels=50, kernel_size=(1, 4), stride=1, bias=True),
                                   nn.BatchNorm2d(50),
                                   nn.Tanh(),
-                                  # state size. (50) x 20 x 7
-                                  nn.Conv2d(in_channels=50, out_channels=50, kernel_size=(4, 1), stride=1 ,bias=True),
-                                  nn.BatchNorm2d(50),
-                                  nn.Tanh(),
-                                  # state size. (50) x 17 x 7
-                                  nn.Conv2d(in_channels=50, out_channels=50, kernel_size=(4, 1), stride=1 ,bias=True),
-                                  nn.BatchNorm2d(50),
-                                  nn.Tanh(),
-                                  # state size. (50) x 14 x 9
+                                  # state size. (50) x 7 x 20
                                   nn.Conv2d(in_channels=50, out_channels=50, kernel_size=(1, 4), stride=1 ,bias=True),
                                   nn.BatchNorm2d(50),
                                   nn.Tanh(),
-                                  # state size. (50) x 14 x 6
+                                  # state size. (50) x 7 x 17
                                   nn.Conv2d(in_channels=50, out_channels=50, kernel_size=(1, 4), stride=1 ,bias=True),
                                   nn.BatchNorm2d(50),
                                   nn.Tanh(),
-                                  # state size. (50) x 14 x 3
-                                  nn.Conv2d(in_channels=50, out_channels=1, kernel_size=(1, 3), stride=1 ,bias=True),
+                                  # state size. (50) x 9 x 14
+                                  nn.Conv2d(in_channels=50, out_channels=50, kernel_size=(4, 1), stride=1 ,bias=True),
+                                  nn.BatchNorm2d(50),
+                                  nn.Tanh(),
+                                  # state size. (50) x 6 x 14
+                                  nn.Conv2d(in_channels=50, out_channels=50, kernel_size=(4, 1), stride=1 ,bias=True),
+                                  nn.BatchNorm2d(50),
+                                  nn.Tanh(),
+                                  # state size. (50) x 3 x 14
+                                  nn.Conv2d(in_channels=50, out_channels=1, kernel_size=(3, 1), stride=1 ,bias=True),
                                   nn.Sigmoid()
-                                  # state size (50, 14, 1)
+                                  # state size (50, 1, 14)
                                   )
 
     def forward(self, input):
